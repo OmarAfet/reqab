@@ -1,0 +1,247 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@source "../node_modules/streamdown/dist/*.js";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-plex-arabic), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-amiri), serif;
+  --font-heading: var(--font-plex-arabic), ui-sans-serif, system-ui, sans-serif;
+  --color-gold: var(--gold);
+  --color-gold-bright: var(--gold-bright);
+  --color-risk: var(--risk);
+  --color-safe: var(--safe);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * رِقَاب — espresso & gold
+ * Deep warm brown-black ground (old deed leather), parchment text,
+ * a single gold accent for the watchful eye. Risk red / safe green are
+ * semantic only and never decorative.
+ */
+:root,
+.dark {
+  --background: oklch(0.16 0.012 60);
+  --foreground: oklch(0.94 0.018 85);
+  --card: oklch(0.2 0.015 62);
+  --card-foreground: oklch(0.94 0.018 85);
+  --popover: oklch(0.21 0.015 62);
+  --popover-foreground: oklch(0.94 0.018 85);
+  --primary: oklch(0.78 0.115 85);
+  --primary-foreground: oklch(0.19 0.02 70);
+  --secondary: oklch(0.24 0.016 65);
+  --secondary-foreground: oklch(0.9 0.02 85);
+  --muted: oklch(0.23 0.014 63);
+  --muted-foreground: oklch(0.66 0.022 78);
+  --accent: oklch(0.26 0.02 70);
+  --accent-foreground: oklch(0.93 0.02 85);
+  --destructive: oklch(0.62 0.17 29);
+  --border: oklch(0.94 0.03 85 / 11%);
+  --input: oklch(0.94 0.03 85 / 14%);
+  --ring: oklch(0.78 0.115 85 / 55%);
+  --gold: oklch(0.78 0.115 85);
+  --gold-bright: oklch(0.86 0.12 90);
+  --risk: oklch(0.65 0.16 32);
+  --safe: oklch(0.72 0.1 150);
+  --chart-1: oklch(0.78 0.115 85);
+  --chart-2: oklch(0.65 0.16 32);
+  --chart-3: oklch(0.72 0.1 150);
+  --chart-4: oklch(0.66 0.022 78);
+  --chart-5: oklch(0.4 0.02 70);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.2 0.015 62);
+  --sidebar-foreground: oklch(0.94 0.018 85);
+  --sidebar-primary: oklch(0.78 0.115 85);
+  --sidebar-primary-foreground: oklch(0.19 0.02 70);
+  --sidebar-accent: oklch(0.26 0.02 70);
+  --sidebar-accent-foreground: oklch(0.93 0.02 85);
+  --sidebar-border: oklch(0.94 0.03 85 / 11%);
+  --sidebar-ring: oklch(0.78 0.115 85 / 55%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-image: radial-gradient(
+        ellipse 80% 50% at 50% -10%,
+        oklch(0.78 0.115 85 / 7%),
+        transparent
+      ),
+      radial-gradient(
+        ellipse 60% 40% at 85% 110%,
+        oklch(0.78 0.115 85 / 4%),
+        transparent
+      );
+    background-attachment: fixed;
+  }
+  html {
+    @apply font-sans;
+  }
+  ::selection {
+    background: oklch(0.78 0.115 85 / 30%);
+  }
+}
+
+/* The watchful eye — pupil pulse while Reqab is reading */
+@keyframes reqab-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.82);
+  }
+}
+.reqab-pupil-live {
+  animation: reqab-pulse 1.6s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reqab-pupil-live {
+    animation: none;
+  }
+}
+
+/* Assistant report typography — a document, not a bubble */
+.reqab-prose {
+  font-size: 0.9375rem;
+  line-height: 1.9;
+}
+.reqab-prose h1,
+.reqab-prose h2 {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--gold-bright);
+  margin-top: 1.75em;
+  margin-bottom: 0.6em;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid oklch(0.78 0.115 85 / 22%);
+}
+.reqab-prose h3,
+.reqab-prose h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-top: 1.4em;
+  margin-bottom: 0.4em;
+}
+.reqab-prose p {
+  margin-bottom: 0.9em;
+}
+.reqab-prose ul,
+.reqab-prose ol {
+  padding-inline-start: 1.4em;
+  margin-bottom: 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45em;
+}
+.reqab-prose ul {
+  list-style: disc;
+}
+.reqab-prose ol {
+  list-style: decimal;
+}
+.reqab-prose li::marker {
+  color: var(--gold);
+}
+.reqab-prose strong {
+  color: var(--gold-bright);
+  font-weight: 600;
+}
+.reqab-prose blockquote {
+  border-inline-start: 2px solid var(--risk);
+  background: oklch(0.65 0.16 32 / 8%);
+  padding: 0.6em 1em;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  margin: 0.9em 0;
+  color: oklch(0.88 0.02 60);
+  font-style: normal;
+}
+.reqab-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0 1.2em;
+  font-size: 0.875rem;
+}
+.reqab-prose th {
+  text-align: start;
+  color: var(--gold-bright);
+  font-weight: 600;
+  border-bottom: 1px solid oklch(0.78 0.115 85 / 30%);
+  padding: 0.5em 0.75em;
+  background: oklch(0.78 0.115 85 / 6%);
+}
+.reqab-prose td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.55em 0.75em;
+  vertical-align: top;
+}
+.reqab-prose tr:last-child td {
+  border-bottom: none;
+}
+.reqab-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--muted);
+  padding: 0.15em 0.45em;
+  border-radius: var(--radius-sm);
+}
+.reqab-prose hr {
+  border-color: var(--border);
+  margin: 1.5em 0;
+}
+.reqab-prose > :first-child {
+  margin-top: 0;
+}
+.reqab-prose > :last-child {
+  margin-bottom: 0;
+}
