@@ -4,6 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import {
   ArrowUp,
+  BookMarked,
   FileText,
   ImageIcon,
   Paperclip,
@@ -38,6 +39,22 @@ const STREAMDOWN_LITERAL_TAGS = ["reqab-score", "reqab-flag", "reqab-check"];
 
 const MAX_FILE_MB = 15;
 const FALLBACK_PROMPT = "حلّل هذا المستند واكشف المخاطر والثغرات.";
+
+const SOURCE_TITLES_AR: Record<string, string> = {
+  "sama-consumer-finance-regulations": "ضوابط التمويل الاستهلاكي المحدثة (ساما)",
+  "sama-finance-consumer-protection": "مبادئ حماية عملاء شركات التمويل (ساما)",
+  "sama-finance-companies-law-regulation":
+    "اللائحة التنفيذية لنظام مراقبة شركات التمويل",
+  "sama-financial-consumer-protection-rules":
+    "مبادئ وقواعد حماية عملاء المؤسسات المالية (ساما)",
+  "reqab-sharia-murabaha-tawarruq-controls":
+    "مرجع الضوابط الشرعية للمرابحة والتورق",
+};
+
+function sourceTitleAr(raw: string) {
+  const key = raw.replace(/\.(txt|md)$/, "");
+  return SOURCE_TITLES_AR[key] ?? raw;
+}
 
 function formatSize(bytes: number) {
   if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} ك.ب`;
@@ -388,6 +405,23 @@ export default function Page() {
               );
             }
 
+            const sourceTitles = Array.from(
+              new Set(
+                message.parts
+                  .filter(
+                    (p) =>
+                      p.type === "source-document" || p.type === "source-url"
+                  )
+                  .map((p) =>
+                    p.type === "source-document"
+                      ? (p.title ?? p.filename)
+                      : (p.title ?? p.url)
+                  )
+                  .filter((t): t is string => Boolean(t))
+                  .map(sourceTitleAr)
+              )
+            );
+
             return (
               <div key={message.id} className="flex flex-col gap-2.5">
                 <div className="flex items-center gap-2">
@@ -410,6 +444,23 @@ export default function Page() {
                     ) : null
                   )}
                 </div>
+                {sourceTitles.length > 0 && (
+                  <div className="ms-7 flex flex-wrap items-center gap-1.5 border-t border-border pt-2.5">
+                    <span className="me-1 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <BookMarked className="size-3.5 text-gold" />
+                      استند الفحص إلى:
+                    </span>
+                    {sourceTitles.map((title) => (
+                      <Badge
+                        key={title}
+                        variant="outline"
+                        className="h-auto whitespace-normal border-gold/25 py-0.5 text-[0.6875rem] font-normal text-muted-foreground"
+                      >
+                        {title}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
