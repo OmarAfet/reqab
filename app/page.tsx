@@ -437,7 +437,7 @@ export default function Page() {
             <div className="mt-8">
               <p className="mb-2.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
                 <History className="size-3.5 text-gold" />
-                محادثات سابقة
+                عمليات الفحص السابقة
               </p>
               <div className="flex flex-col gap-1.5">
                 {chatHistory.slice(0, 8).map((chat) => (
