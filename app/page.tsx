@@ -47,12 +47,13 @@ const SOURCE_TITLES_AR: Record<string, string> = {
     "اللائحة التنفيذية لنظام مراقبة شركات التمويل",
   "sama-financial-consumer-protection-rules":
     "مبادئ وقواعد حماية عملاء المؤسسات المالية (ساما)",
-  "reqab-sharia-murabaha-tawarruq-controls":
-    "مرجع الضوابط الشرعية للمرابحة والتورق",
+  "boe-finance-companies-control-law":
+    "نظام مراقبة شركات التمويل (هيئة الخبراء)",
+  "boe-real-estate-finance-law": "نظام التمويل العقاري (هيئة الخبراء)",
 };
 
 function sourceTitleAr(raw: string) {
-  const key = raw.replace(/\.(txt|md)$/, "");
+  const key = raw.replace(/\.(txt|md)$/, "").replace(/-part\d+$/, "");
   return SOURCE_TITLES_AR[key] ?? raw;
 }
 
