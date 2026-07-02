@@ -56,49 +56,48 @@
 }
 
 /*
- * رِقَاب — espresso & gold
- * Deep warm brown-black ground (old deed leather), parchment text,
+ * رِقَاب — parchment & gold
+ * Warm paper-white ground (fresh deed parchment), espresso ink,
  * a single gold accent for the watchful eye. Risk red / safe green are
  * semantic only and never decorative.
  */
-:root,
-.dark {
-  --background: oklch(0.16 0.012 60);
-  --foreground: oklch(0.94 0.018 85);
-  --card: oklch(0.2 0.015 62);
-  --card-foreground: oklch(0.94 0.018 85);
-  --popover: oklch(0.21 0.015 62);
-  --popover-foreground: oklch(0.94 0.018 85);
-  --primary: oklch(0.78 0.115 85);
-  --primary-foreground: oklch(0.19 0.02 70);
-  --secondary: oklch(0.24 0.016 65);
-  --secondary-foreground: oklch(0.9 0.02 85);
-  --muted: oklch(0.23 0.014 63);
-  --muted-foreground: oklch(0.66 0.022 78);
-  --accent: oklch(0.26 0.02 70);
-  --accent-foreground: oklch(0.93 0.02 85);
-  --destructive: oklch(0.62 0.17 29);
-  --border: oklch(0.94 0.03 85 / 11%);
-  --input: oklch(0.94 0.03 85 / 14%);
-  --ring: oklch(0.78 0.115 85 / 55%);
-  --gold: oklch(0.78 0.115 85);
-  --gold-bright: oklch(0.86 0.12 90);
-  --risk: oklch(0.65 0.16 32);
-  --safe: oklch(0.72 0.1 150);
-  --chart-1: oklch(0.78 0.115 85);
-  --chart-2: oklch(0.65 0.16 32);
-  --chart-3: oklch(0.72 0.1 150);
-  --chart-4: oklch(0.66 0.022 78);
-  --chart-5: oklch(0.4 0.02 70);
+:root {
+  --background: oklch(0.97 0.01 85);
+  --foreground: oklch(0.23 0.015 60);
+  --card: oklch(0.99 0.006 88);
+  --card-foreground: oklch(0.23 0.015 60);
+  --popover: oklch(0.99 0.006 88);
+  --popover-foreground: oklch(0.23 0.015 60);
+  --primary: oklch(0.74 0.12 85);
+  --primary-foreground: oklch(0.22 0.02 60);
+  --secondary: oklch(0.93 0.014 80);
+  --secondary-foreground: oklch(0.3 0.02 65);
+  --muted: oklch(0.94 0.012 82);
+  --muted-foreground: oklch(0.46 0.025 70);
+  --accent: oklch(0.91 0.02 85);
+  --accent-foreground: oklch(0.26 0.02 65);
+  --destructive: oklch(0.55 0.18 29);
+  --border: oklch(0.25 0.03 60 / 12%);
+  --input: oklch(0.25 0.03 60 / 16%);
+  --ring: oklch(0.65 0.12 85 / 55%);
+  --gold: oklch(0.63 0.12 84);
+  --gold-bright: oklch(0.54 0.125 80);
+  --risk: oklch(0.55 0.17 30);
+  --safe: oklch(0.55 0.11 150);
+  --chart-1: oklch(0.63 0.12 84);
+  --chart-2: oklch(0.55 0.17 30);
+  --chart-3: oklch(0.55 0.11 150);
+  --chart-4: oklch(0.46 0.025 70);
+  --chart-5: oklch(0.8 0.03 75);
   --radius: 0.75rem;
-  --sidebar: oklch(0.2 0.015 62);
-  --sidebar-foreground: oklch(0.94 0.018 85);
-  --sidebar-primary: oklch(0.78 0.115 85);
-  --sidebar-primary-foreground: oklch(0.19 0.02 70);
-  --sidebar-accent: oklch(0.26 0.02 70);
-  --sidebar-accent-foreground: oklch(0.93 0.02 85);
-  --sidebar-border: oklch(0.94 0.03 85 / 11%);
-  --sidebar-ring: oklch(0.78 0.115 85 / 55%);
+  --sidebar: oklch(0.99 0.006 88);
+  --sidebar-foreground: oklch(0.23 0.015 60);
+  --sidebar-primary: oklch(0.74 0.12 85);
+  --sidebar-primary-foreground: oklch(0.22 0.02 60);
+  --sidebar-accent: oklch(0.91 0.02 85);
+  --sidebar-accent-foreground: oklch(0.26 0.02 65);
+  --sidebar-border: oklch(0.25 0.03 60 / 12%);
+  --sidebar-ring: oklch(0.65 0.12 85 / 55%);
 }
 
 @layer base {
@@ -115,21 +114,22 @@
     @apply bg-background text-foreground;
     background-image: radial-gradient(
         ellipse 80% 50% at 50% -10%,
-        oklch(0.78 0.115 85 / 7%),
+        color-mix(in oklch, var(--gold) 8%, transparent),
         transparent
       ),
       radial-gradient(
         ellipse 60% 40% at 85% 110%,
-        oklch(0.78 0.115 85 / 4%),
+        color-mix(in oklch, var(--gold) 5%, transparent),
         transparent
       );
     background-attachment: fixed;
   }
   html {
     @apply font-sans;
+    color-scheme: light;
   }
   ::selection {
-    background: oklch(0.78 0.115 85 / 30%);
+    background: color-mix(in oklch, var(--gold) 35%, transparent);
   }
 }
 
@@ -169,7 +169,7 @@
   margin-top: 1.75em;
   margin-bottom: 0.6em;
   padding-bottom: 0.35em;
-  border-bottom: 1px solid oklch(0.78 0.115 85 / 22%);
+  border-bottom: 1px solid color-mix(in oklch, var(--gold) 30%, transparent);
 }
 .reqab-prose h3,
 .reqab-prose h4 {
@@ -205,12 +205,12 @@
 }
 .reqab-prose blockquote {
   /* Same language as the flag cards: uniform tinted border, rounded. */
-  border: 1px solid oklch(0.65 0.16 32 / 25%);
-  background: oklch(0.65 0.16 32 / 8%);
+  border: 1px solid color-mix(in oklch, var(--risk) 30%, transparent);
+  background: color-mix(in oklch, var(--risk) 7%, transparent);
   padding: 0.6em 1em;
   border-radius: var(--radius-md);
   margin: 0.9em 0;
-  color: oklch(0.88 0.02 60);
+  color: var(--foreground);
   font-style: normal;
 }
 .reqab-prose table {
@@ -223,9 +223,9 @@
   text-align: start;
   color: var(--gold-bright);
   font-weight: 600;
-  border-bottom: 1px solid oklch(0.78 0.115 85 / 30%);
+  border-bottom: 1px solid color-mix(in oklch, var(--gold) 35%, transparent);
   padding: 0.5em 0.75em;
-  background: oklch(0.78 0.115 85 / 6%);
+  background: color-mix(in oklch, var(--gold) 7%, transparent);
 }
 .reqab-prose td {
   border-bottom: 1px solid var(--border);

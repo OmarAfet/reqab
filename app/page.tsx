@@ -399,7 +399,7 @@ export default function Page() {
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-2xl">
           <div className="flex flex-col items-center text-center">
-            <ReqabMark className="size-14 drop-shadow-[0_0_18px_oklch(0.78_0.115_85_/_45%)]" />
+            <ReqabMark className="size-14 drop-shadow-[0_0_18px_color-mix(in_oklch,var(--gold)_40%,transparent)]" />
             <h1 className="mt-5 font-display text-6xl font-bold tracking-tight text-gold-bright sm:text-7xl">
               رِقَاب
             </h1>

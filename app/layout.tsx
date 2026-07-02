@@ -34,7 +34,7 @@ export default function RootLayout({
     <html
       lang="ar"
       dir="rtl"
-      className={`dark ${plexArabic.variable} ${amiri.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${plexArabic.variable} ${amiri.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
