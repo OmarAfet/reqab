@@ -6,19 +6,31 @@ import {
   ArrowUp,
   BookMarked,
   FileText,
+  History,
   ImageIcon,
   Paperclip,
   RotateCcw,
   Square,
+  Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Streamdown } from "streamdown";
 
 import { ReqabCheck, ReqabFlag, ReqabScore } from "@/components/reqab-blocks";
 import { ReqabMark } from "@/components/reqab-mark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  chatTitle,
+  deleteChat,
+  getActiveChatId,
+  loadChats,
+  newChatId,
+  saveChat,
+  setActiveChatId,
+  type StoredChat,
+} from "@/lib/chat-store";
 import { SUGGESTIONS } from "@/lib/demo";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +38,14 @@ const STREAMDOWN_COMPONENTS = {
   "reqab-score": ReqabScore,
   "reqab-flag": ReqabFlag,
   "reqab-check": ReqabCheck,
+  // Streamdown's default table ships inside a padded card with
+  // copy/download/fullscreen controls; render a plain table instead
+  // and let .reqab-prose handle the styling.
+  table: ({ children }: { children?: ReactNode }) => (
+    <div className="overflow-x-auto">
+      <table>{children}</table>
+    </div>
+  ),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any;
 
@@ -62,6 +82,49 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} م.ب`;
 }
 
+const RELATIVE_TIME = new Intl.RelativeTimeFormat("ar-u-nu-latn", {
+  numeric: "auto",
+});
+
+function relativeTime(ts: number) {
+  const minutes = Math.round((ts - Date.now()) / 60_000);
+  if (minutes > -1) return "الآن";
+  if (minutes > -60) return RELATIVE_TIME.format(minutes, "minute");
+  const hours = Math.round(minutes / 60);
+  if (hours > -24) return RELATIVE_TIME.format(hours, "hour");
+  return RELATIVE_TIME.format(Math.round(hours / 24), "day");
+}
+
+// Gemini can spend up to a minute thinking and searching the regulations
+// library before the first token arrives; walk through the stages so the
+// wait reads as work, not a hang.
+const THINKING_PHRASES = [
+  "الرقيب يقرأ طلبك…",
+  "يفحص البنود بعين الخبير…",
+  "يراجع لوائح ساما والضوابط الشرعية…",
+  "يحسب الأرقام ويدقق التفاصيل…",
+  "يصيغ الرد النهائي…",
+];
+
+function ThinkingIndicator() {
+  const [phrase, setPhrase] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(
+      () => setPhrase((i) => Math.min(i + 1, THINKING_PHRASES.length - 1)),
+      8000
+    );
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+      <ReqabMark className="size-5" live />
+      <span className="animate-pulse">{THINKING_PHRASES[phrase]}</span>
+    </div>
+  );
+}
+
 export default function Page() {
   const { messages, sendMessage, status, stop, error, regenerate, setMessages } =
     useChat({
@@ -87,6 +150,41 @@ export default function Page() {
           0
         )
       : 0;
+
+  // The stream opens (and status leaves "submitted") long before Gemini
+  // emits its first token, so key the indicator on visible text instead.
+  const awaitingText = busy && streamedChars === 0;
+
+  const [chatHistory, setChatHistory] = useState<StoredChat[]>([]);
+  const chatIdRef = useRef<string | null>(null);
+
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    const chats = loadChats();
+    setChatHistory(chats);
+    const activeId = getActiveChatId();
+    const active = activeId ? chats.find((c) => c.id === activeId) : undefined;
+    if (active) {
+      chatIdRef.current = active.id;
+      setMessages(active.messages);
+    }
+  }, [setMessages]);
+
+  useEffect(() => {
+    if (busy || messages.length === 0) return;
+    if (!chatIdRef.current) chatIdRef.current = newChatId();
+    setActiveChatId(chatIdRef.current);
+    setChatHistory(
+      saveChat({
+        id: chatIdRef.current,
+        title: chatTitle(messages),
+        updatedAt: Date.now(),
+        messages,
+      })
+    );
+  }, [messages, busy]);
 
   const followRef = useRef(true);
 
@@ -154,6 +252,8 @@ export default function Page() {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
   }
 
+  // The conversation itself stays in history (saved on every settled turn);
+  // this only closes it and returns to the landing screen.
   function resetChat() {
     stop();
     setMessages([]);
@@ -161,6 +261,27 @@ export default function Page() {
     setFiles([]);
     setFileError(null);
     setExpanded(new Set());
+    chatIdRef.current = null;
+    setActiveChatId(null);
+  }
+
+  function openChat(chat: StoredChat) {
+    stop();
+    chatIdRef.current = chat.id;
+    setActiveChatId(chat.id);
+    setMessages(chat.messages);
+    setInput("");
+    setFiles([]);
+    setFileError(null);
+    setExpanded(new Set());
+  }
+
+  function removeChat(id: string) {
+    setChatHistory(deleteChat(id));
+    if (chatIdRef.current === id) {
+      chatIdRef.current = null;
+      setActiveChatId(null);
+    }
   }
 
   function toggleExpanded(id: string) {
@@ -312,6 +433,44 @@ export default function Page() {
             ))}
           </div>
 
+          {chatHistory.length > 0 && (
+            <div className="mt-8">
+              <p className="mb-2.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <History className="size-3.5 text-gold" />
+                محادثات سابقة
+              </p>
+              <div className="flex flex-col gap-1.5">
+                {chatHistory.slice(0, 8).map((chat) => (
+                  <div
+                    key={chat.id}
+                    className="flex items-center rounded-xl border border-border bg-card/50 transition-colors hover:border-gold/40 hover:bg-card"
+                  >
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 px-4 py-2.5 text-start"
+                      onClick={() => openChat(chat)}
+                    >
+                      <span className="block truncate text-sm font-medium text-foreground">
+                        {chat.title}
+                      </span>
+                      <span className="mt-0.5 block text-[0.6875rem] text-muted-foreground/70">
+                        {relativeTime(chat.updatedAt)}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`حذف محادثة ${chat.title}`}
+                      className="me-2 rounded-md p-2 text-muted-foreground/40 transition-colors hover:bg-accent hover:text-risk"
+                      onClick={() => removeChat(chat.id)}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <p className="mt-10 text-center text-xs text-muted-foreground/60">
             فريق رِقَاب · هاكاثون أمد 2026 بالشراكة مع مصرف الإنماء · مسار الذكاء
             الاصطناعي التوليدي للتقنية المالية
@@ -423,6 +582,13 @@ export default function Page() {
               )
             );
 
+            // While Gemini is still thinking the assistant message exists but
+            // has no text yet; the thinking indicator stands in for it.
+            const hasText = message.parts.some(
+              (p) => p.type === "text" && p.text.trim().length > 0
+            );
+            if (!hasText && sourceTitles.length === 0) return null;
+
             return (
               <div key={message.id} className="flex flex-col gap-2.5">
                 <div className="flex items-center gap-2">
@@ -466,12 +632,7 @@ export default function Page() {
             );
           })}
 
-          {status === "submitted" && (
-            <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-              <ReqabMark className="size-5" live />
-              <span className="animate-pulse">الرقيب يقرأ البنود…</span>
-            </div>
-          )}
+          {awaitingText && <ThinkingIndicator />}
 
           {error && (
             <div

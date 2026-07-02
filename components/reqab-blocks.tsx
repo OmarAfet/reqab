@@ -116,8 +116,6 @@ export function ReqabFlag({
       className="my-4 block rounded-lg border bg-card/60 p-4"
       style={{
         borderColor: `color-mix(in oklch, ${s.tone} 30%, transparent)`,
-        borderInlineStartWidth: 3,
-        borderInlineStartColor: s.tone,
       }}
     >
       <span className="flex flex-wrap items-center gap-2">

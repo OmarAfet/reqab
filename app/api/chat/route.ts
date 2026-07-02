@@ -8,7 +8,10 @@ import {
   type UIMessage,
 } from "ai";
 
-export const maxDuration = 60;
+// Analyses regularly take close to a minute (thinking + file search +
+// a long Arabic report), so leave generous headroom before the platform
+// kills the function mid-stream.
+export const maxDuration = 300;
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY,
