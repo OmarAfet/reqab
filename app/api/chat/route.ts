@@ -17,6 +17,41 @@ const google = createGoogleGenerativeAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
+// gemini-3.5-flash is the newest flash model and regularly returns 503 under
+// load spikes; older siblings stay available, so walk the chain until one
+// answers. gemini-2.5-flash is NOT a valid fallback: Google rejects it for
+// new API keys. Override via GEMINI_MODELS="a,b,c" without a code change.
+const MODEL_FALLBACK_CHAIN = (
+  process.env.GEMINI_MODELS ??
+  "gemini-3.5-flash,gemini-3-flash-preview,gemini-3.1-flash-lite"
+)
+  .split(",")
+  .map((m) => m.trim())
+  .filter(Boolean);
+
+// A failed provider call surfaces as an "error" part inside the stream, not a
+// rejected promise. Peek at a teed branch until something substantive (or a
+// clean end) proves the model is answering; lifecycle parts don't count.
+async function streamsSuccessfully(
+  probe: ReadableStream<{ type: string; error?: unknown }>
+): Promise<{ ok: boolean; reason?: unknown }> {
+  const reader = probe.getReader();
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) return { ok: true };
+      if (value.type === "error") return { ok: false, reason: value.error };
+      if (value.type !== "start" && value.type !== "start-step") {
+        return { ok: true };
+      }
+    }
+  } catch (error) {
+    return { ok: false, reason: error };
+  } finally {
+    reader.cancel().catch(() => {});
+  }
+}
+
 const SYSTEM_PROMPT = `أنت "رِقَاب"، مساعد ذكاء اصطناعي توليدي متخصص في عقود التمويل، طُوِّر كنموذج أولي لمصرف الإنماء ضمن هاكاثون "أمد" (شراكة بين مصرف الإنماء وأكاديمية طويق) في مسار الذكاء الاصطناعي التوليدي للتقنية المالية. اسمك مشتق من "الرقيب": عين خبيرة لا يفوتها بند.
 
 # سياق مصرف الإنماء
@@ -107,55 +142,83 @@ export async function POST(req: Request) {
 
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
-      const result = streamText({
-        model: google("gemini-3.5-flash"),
-        system: SYSTEM_PROMPT,
-        messages: modelMessages,
-        tools: fileSearchStoreName
-          ? {
-              file_search: google.tools.fileSearch({
-                fileSearchStoreNames: [fileSearchStoreName],
-              }),
-            }
-          : undefined,
-      });
+      let merged = false;
 
-      // The provider only exposes file-search citations once the stream ends,
-      // so hold back the finish frame, append the sources, then close.
-      writer.merge(
-        toUIMessageStream({
-          stream: result.stream,
-          sendSources: true,
-          sendFinish: false,
-        })
-      );
-
-      const seen = new Set<string>();
-      const emit = (title: string | undefined) => {
-        if (!title || seen.has(title)) return;
-        seen.add(title);
-        writer.write({
-          type: "source-document",
-          sourceId: `fs-${seen.size}`,
-          mediaType: "text/plain",
-          title,
+      for (const modelName of MODEL_FALLBACK_CHAIN) {
+        const result = streamText({
+          model: google(modelName),
+          system: SYSTEM_PROMPT,
+          messages: modelMessages,
+          maxRetries: 1,
+          tools: fileSearchStoreName
+            ? {
+                file_search: google.tools.fileSearch({
+                  fileSearchStoreNames: [fileSearchStoreName],
+                }),
+              }
+            : undefined,
         });
-      };
 
-      for (const source of await result.sources) {
-        if (source.sourceType === "document") emit(source.title);
-      }
-      // In streaming mode the provider reports file-search citations only
-      // through grounding metadata, not as source parts.
-      const metadata = (await result.providerMetadata)?.google as
-        | { groundingMetadata?: { groundingChunks?: unknown[] } }
-        | undefined;
-      for (const chunk of metadata?.groundingMetadata?.groundingChunks ?? []) {
-        const ctx = (chunk as { retrievedContext?: { title?: string } })
-          ?.retrievedContext;
-        emit(ctx?.title);
+        const [probe, rest] = result.stream.tee();
+        const health = await streamsSuccessfully(probe);
+        if (!health.ok) {
+          void rest.cancel().catch(() => {});
+          console.warn(
+            `[reqab] ${modelName} unavailable, trying next model:`,
+            health.reason instanceof Error
+              ? health.reason.message
+              : health.reason
+          );
+          continue;
+        }
+
+        // The provider only exposes file-search citations once the stream
+        // ends, so hold back the finish frame, append the sources, then close.
+        writer.merge(
+          toUIMessageStream({
+            stream: rest,
+            sendSources: true,
+            sendFinish: false,
+          })
+        );
+        merged = true;
+
+        const seen = new Set<string>();
+        const emit = (title: string | undefined) => {
+          if (!title || seen.has(title)) return;
+          seen.add(title);
+          writer.write({
+            type: "source-document",
+            sourceId: `fs-${seen.size}`,
+            mediaType: "text/plain",
+            title,
+          });
+        };
+
+        for (const source of await result.sources) {
+          if (source.sourceType === "document") emit(source.title);
+        }
+        // In streaming mode the provider reports file-search citations only
+        // through grounding metadata, not as source parts.
+        const metadata = (await result.providerMetadata)?.google as
+          | { groundingMetadata?: { groundingChunks?: unknown[] } }
+          | undefined;
+        for (const chunk of metadata?.groundingMetadata?.groundingChunks ??
+          []) {
+          const ctx = (chunk as { retrievedContext?: { title?: string } })
+            ?.retrievedContext;
+          emit(ctx?.title);
+        }
+        break;
       }
 
+      if (!merged) {
+        writer.write({
+          type: "error",
+          errorText:
+            "جميع النماذج مشغولة حاليًا بسبب الضغط، انتظر قليلًا ثم أعد المحاولة.",
+        });
+      }
       writer.write({ type: "finish" });
     },
   });
