@@ -252,3 +252,21 @@
 .reqab-prose > :last-child {
   margin-bottom: 0;
 }
+
+/* Generated contract preview — reads as a paper deed, not a chat reply */
+.contract-paper {
+  font-size: 1rem;
+  line-height: 2.1;
+}
+.contract-paper p,
+.contract-paper li {
+  text-align: justify;
+}
+.contract-paper strong {
+  color: var(--foreground);
+}
+.contract-paper h1,
+.contract-paper h2 {
+  color: var(--foreground);
+  font-family: inherit;
+}

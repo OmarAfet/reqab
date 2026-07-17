@@ -17,6 +17,7 @@ import {
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Streamdown } from "streamdown";
 
+import { ContractDraft } from "@/components/contract-draft";
 import { ReqabCheck, ReqabFlag, ReqabScore } from "@/components/reqab-blocks";
 import { ReqabMark } from "@/components/reqab-mark";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,81 @@ const STREAMDOWN_ALLOWED_TAGS = {
 };
 
 const STREAMDOWN_LITERAL_TAGS = ["reqab-score", "reqab-flag", "reqab-check"];
+
+/*
+ * Generated contract drafts arrive wrapped in <reqab-contract> tags. They are
+ * split out of the message text before Streamdown sees it and rendered as
+ * ContractDraft cards, so the raw markdown stays available for PDF export.
+ */
+type Segment =
+  | { kind: "md"; text: string }
+  | {
+      kind: "contract";
+      raw: string;
+      title?: string;
+      type?: string;
+      complete: boolean;
+    };
+
+const CONTRACT_OPEN = /<reqab-contract\b([^>]*)>/g;
+const CONTRACT_CLOSE = "</reqab-contract>";
+
+// While streaming, a half-written tag would flash as raw text; trim it.
+function trimPartialTag(text: string) {
+  const cut = text.replace(/<\/?reqab-contract\b[^>]*$/, "");
+  const lt = cut.lastIndexOf("<");
+  if (lt === -1) return cut;
+  const frag = cut.slice(lt);
+  if (
+    !frag.includes(">") &&
+    ("<reqab-contract".startsWith(frag) || "</reqab-contract".startsWith(frag))
+  ) {
+    return cut.slice(0, lt);
+  }
+  return cut;
+}
+
+function parseAttrs(s: string) {
+  const attrs: Record<string, string> = {};
+  for (const m of s.matchAll(/([\w-]+)="([^"]*)"/g)) attrs[m[1]] = m[2];
+  return attrs;
+}
+
+function splitContractSegments(text: string): Segment[] {
+  const segments: Segment[] = [];
+  let cursor = 0;
+  CONTRACT_OPEN.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = CONTRACT_OPEN.exec(text))) {
+    const before = text.slice(cursor, m.index);
+    if (before.trim()) segments.push({ kind: "md", text: before });
+    const attrs = parseAttrs(m[1] ?? "");
+    const bodyStart = m.index + m[0].length;
+    const closeIdx = text.indexOf(CONTRACT_CLOSE, bodyStart);
+    if (closeIdx === -1) {
+      segments.push({
+        kind: "contract",
+        raw: trimPartialTag(text.slice(bodyStart)),
+        title: attrs.title,
+        type: attrs.type,
+        complete: false,
+      });
+      return segments;
+    }
+    segments.push({
+      kind: "contract",
+      raw: text.slice(bodyStart, closeIdx),
+      title: attrs.title,
+      type: attrs.type,
+      complete: true,
+    });
+    cursor = closeIdx + CONTRACT_CLOSE.length;
+    CONTRACT_OPEN.lastIndex = cursor;
+  }
+  const rest = trimPartialTag(text.slice(cursor));
+  if (rest.trim()) segments.push({ kind: "md", text: rest });
+  return segments;
+}
 
 const MAX_FILE_MB = 15;
 const FALLBACK_PROMPT = "حلّل هذا المستند واكشف المخاطر والثغرات.";
@@ -598,18 +674,33 @@ export default function Page() {
                   </span>
                 </div>
                 <div className="reqab-prose ps-7">
-                  {message.parts.map((part, i) =>
-                    part.type === "text" ? (
-                      <Streamdown
-                        key={i}
-                        components={STREAMDOWN_COMPONENTS}
-                        allowedTags={STREAMDOWN_ALLOWED_TAGS}
-                        literalTagContent={STREAMDOWN_LITERAL_TAGS}
-                      >
-                        {part.text}
-                      </Streamdown>
-                    ) : null
-                  )}
+                  {message.parts.map((part, i) => {
+                    if (part.type !== "text") return null;
+                    return splitContractSegments(part.text).map((seg, j) =>
+                      seg.kind === "contract" ? (
+                        <ContractDraft
+                          key={`${i}-${j}`}
+                          raw={seg.raw}
+                          title={seg.title}
+                          type={seg.type}
+                          streaming={
+                            !seg.complete &&
+                            busy &&
+                            message.id === lastMessage?.id
+                          }
+                        />
+                      ) : (
+                        <Streamdown
+                          key={`${i}-${j}`}
+                          components={STREAMDOWN_COMPONENTS}
+                          allowedTags={STREAMDOWN_ALLOWED_TAGS}
+                          literalTagContent={STREAMDOWN_LITERAL_TAGS}
+                        >
+                          {seg.text}
+                        </Streamdown>
+                      )
+                    );
+                  })}
                 </div>
                 {sourceTitles.length > 0 && (
                   <div className="ms-7 flex flex-wrap items-center gap-1.5 border-t border-border pt-2.5">

@@ -69,7 +69,7 @@ export const SUGGESTIONS: {
   {
     key: "draft",
     label: "ولّد مسودة عقد تمويل",
-    hint: "مرابحة 850,000 ريال لمؤسسة الأفق",
+    hint: "مرابحة 850,000 ريال، وحمّلها ملف PDF",
     prompt: SAMPLE_DRAFT_PROMPT,
   },
   {
